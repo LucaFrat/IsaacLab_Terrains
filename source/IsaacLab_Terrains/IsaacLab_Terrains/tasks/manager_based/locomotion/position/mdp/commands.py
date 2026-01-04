@@ -85,9 +85,9 @@ class UniformPose3dPolarCommand(UniformPoseCommand):
 
         self.pose_command_w[env_ids, 0] = robot_pos_w[:, 0] + offset_x
         self.pose_command_w[env_ids, 1] = robot_pos_w[:, 1] + offset_y
-        self.pose_command_w[env_ids, 2] = 0.5
+        self.pose_command_w[env_ids, 2] = robot_pos_w[:, 2]
 
-        self.pose_command_w[env_ids, 3:] = quat_from_euler_xyz(zeros, zeros, zeros)
+        # self.pose_command_b[env_ids, 3:] = quat_from_euler_xyz(zeros, zeros, zeros)
 
 @dataclass
 class UniformPose3dPolarCommandCfg(UniformPoseCommandCfg):

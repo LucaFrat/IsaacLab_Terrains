@@ -22,6 +22,9 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab.markers.config import FRAME_MARKER_CFG
+from isaaclab.markers import VisualizationMarkersCfg
+
 
 import IsaacLab_Terrains.tasks.manager_based.locomotion.position.mdp as mdp
 
@@ -147,18 +150,21 @@ class CommandsCfg:
     pose_command = mdp.commands.UniformPose3dPolarCommandCfg(
         asset_name="robot",
         body_name="base",
-        resampling_time_range=(8.0, 8.0),
+        resampling_time_range=(5.9, 5.9),
         debug_vis=True,
         radius_range=(1.0, 5.0),
         heading_range=(-3.14, 3.14),
         ranges=mdp.UniformPoseCommandCfg.Ranges(
-            pos_x=(-0.0, 0.0),
-            pos_y=(-0.0, 0.0),
+            pos_x=(-5.0, 5.0),
+            pos_y=(-5.0, 5.0),
             pos_z=(-0.0, 0.0),
             roll=(-0.0, 0.0),
             pitch=(-0.0, 0.0),
             yaw=(-0.0, 0.0)
-        )
+        ),
+        # goal_pose_visualizer_cfg = FRAME_MARKER_CFG.replace(
+        #     prim_path="/Visuals/Command/body_pose"
+        # )
     )
 
 
@@ -304,19 +310,27 @@ class RewardsCfg:
     """Reward terms for the MDP."""
 
     # -- task
-    position_tracking = RewTerm(
-        func=mdp.position_command_error_tanh,
+    task_reward = RewTerm(
+        func=mdp.get_to_pos_in_time,
         weight=5.0,
-        params={"std": 2.0,
+        params={"reward_duration": 1.0,
                 "command_name": "pose_command",
-                "asset_cfg": SceneEntityCfg("robot"),
-        },
+                "asset_cfg": SceneEntityCfg("robot")
+                },
     )
-    progress = RewTerm(
-        func=mdp.progress_toward_goal,
-        weight=0.5, # Positive signal for moving in the right direction
-        params={"command_name": "pose_command"},
-    )
+    # position_tracking = RewTerm(
+    #     func=mdp.position_command_error_tanh,
+    #     weight=5.0,
+    #     params={"std": 2.0,
+    #             "command_name": "pose_command",
+    #             "asset_cfg": SceneEntityCfg("robot"),
+    #     },
+    # )
+    # progress = RewTerm(
+    #     func=mdp.progress_toward_goal,
+    #     weight=0.5, # Positive signal for moving in the right direction
+    #     params={"command_name": "pose_command"},
+    # )
 
     # -- penalties
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)

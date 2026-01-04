@@ -18,6 +18,8 @@ from isaaclab.envs import mdp
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import quat_apply_inverse, yaw_quat
+import IsaacLab_Terrains.tasks.manager_based.locomotion.position.mdp as mdp
+
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -156,3 +158,26 @@ def position_command_error_tanh(
     distance = dist_to_goal / total_mission_dist * 3.0
     # print(f"DISTANCE: {distance}")
     return 1 - torch.tanh(distance / std)
+
+
+def get_to_pos_in_time(
+    env: ManagerBasedRLEnv,
+    reward_duration: float,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+    ) -> torch.Tensor:
+
+    robot = env.scene[asset_cfg.name]
+    cmd_term = env.command_manager.get_term(command_name)
+
+    robot_pos_w = robot.data.root_pos_w[:, :3]
+    goal_pos_w = cmd_term.pose_command_w[:, :3]
+
+    remaining_time = mdp.remaining_time_s(env)
+    time_is_enough = torch.squeeze(remaining_time < reward_duration)
+
+    error = torch.norm(robot_pos_w - goal_pos_w, dim=1)
+    reward = 1.0 / ( 1.0 + error**2 ) / reward_duration
+
+    return reward * time_is_enough
+
