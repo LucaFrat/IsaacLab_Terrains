@@ -181,3 +181,21 @@ def get_to_pos_in_time(
 
     return reward * time_is_enough
 
+
+def exploration_incentive(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+    ) -> torch.Tensor:
+
+    robot = env.scene[asset_cfg.name]
+    cmd_term = env.command_manager.get_term(command_name)
+
+    robot_pos_w = robot.data.root_pos_w[:, :3]
+    robot_vel_w = robot.data.root_lin_vel_b[:, :3]
+    goal_pos_w = cmd_term.pose_command_w[:, :3]
+
+    pos_error = goal_pos_w - robot_pos_w
+    reward = torch.sum(robot_vel_w * pos_error, dim=1) / (torch.norm(robot_vel_w) * torch.norm(pos_error))
+
+    return reward

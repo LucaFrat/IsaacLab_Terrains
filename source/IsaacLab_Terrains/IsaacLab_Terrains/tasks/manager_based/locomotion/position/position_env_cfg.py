@@ -318,6 +318,14 @@ class RewardsCfg:
                 "asset_cfg": SceneEntityCfg("robot")
                 },
     )
+    explore = RewTerm(
+        func=mdp.exploration_incentive,
+        weight=1.0,
+        params={"command_name": "pose_command",
+                "asset_cfg": SceneEntityCfg("robot")
+                },
+    )
+
     # position_tracking = RewTerm(
     #     func=mdp.position_command_error_tanh,
     #     weight=5.0,
