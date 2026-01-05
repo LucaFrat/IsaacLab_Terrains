@@ -172,11 +172,13 @@ def get_to_pos_in_time(
 
     robot_pos_w = robot.data.root_pos_w[:, :3]
     goal_pos_w = cmd_term.pose_command_w[:, :3]
+    # print(goal_pos_w[0])
 
     remaining_time = mdp.remaining_time_s(env)
     time_is_enough = torch.squeeze(remaining_time < reward_duration)
 
     error = torch.norm(robot_pos_w - goal_pos_w, dim=1)
+    # print(error[10:15])
     reward = 1.0 / ( 1.0 + error**2 ) / reward_duration
 
     return reward * time_is_enough
@@ -196,6 +198,41 @@ def exploration_incentive(
     goal_pos_w = cmd_term.pose_command_w[:, :3]
 
     pos_error = goal_pos_w - robot_pos_w
-    reward = torch.sum(robot_vel_w * pos_error, dim=1) / (torch.norm(robot_vel_w) * torch.norm(pos_error))
 
+    numerator = torch.sum(robot_vel_w * pos_error, dim=1)
+    denominator = torch.mul(torch.linalg.vector_norm(robot_vel_w, dim=1), torch.linalg.vector_norm(pos_error, dim=1))
+    reward = torch.div(numerator, denominator + 1e-6)
     return reward
+
+
+def stalling_penalty(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    reward_duration: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+    ) -> torch.Tensor:
+
+    robot = env.scene[asset_cfg.name]
+    cmd_term = env.command_manager.get_term(command_name)
+
+    robot_pos_w = robot.data.root_pos_w[:, :3]
+    robot_vel_w = robot.data.root_lin_vel_b[:, :3]
+    goal_pos_w = cmd_term.pose_command_w[:, :3]
+
+    task_val = get_to_pos_in_time(
+        env,
+        reward_duration=reward_duration,
+        command_name=command_name,
+        asset_cfg=asset_cfg
+    )
+
+    # if the task reward reaches 50% of its max, zero this reward
+    if torch.mean(task_val) > 0.5:
+        return torch.zeros(env.scene.num_envs, device="cuda")
+    else:
+        is_slow = torch.norm(robot_vel_w, dim=1) < 0.1
+        is_far = torch.norm(robot_pos_w - goal_pos_w, dim=1) > 0.5
+        reward = torch.ones(env.scene.num_envs, device="cuda")
+
+        is_zero_reward = ~(is_slow & is_far)
+        return reward * is_zero_reward

@@ -3,12 +3,20 @@ import torch
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 import math
+from collections.abc import Sequence
+
+
 
 from isaaclab.envs.mdp.commands.commands_cfg import UniformPose2dCommandCfg, UniformPoseCommandCfg
 from isaaclab.envs.mdp.commands.pose_2d_command import UniformPose2dCommand
 from isaaclab.envs.mdp.commands.pose_command import UniformPoseCommand
 from isaaclab.managers import SceneEntityCfg
-from isaaclab.utils.math import quat_from_euler_xyz
+from isaaclab.utils.math import quat_from_euler_xyz, quat_apply_inverse
+from isaaclab.managers import CommandTerm, CommandTermCfg
+
+import IsaacLab_Terrains.tasks.manager_based.locomotion.position.mdp as mdp
+
+
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -63,12 +71,7 @@ class UniformPose3dPolarCommand(UniformPoseCommand):
         super().__init__(cfg, env)
         self.robot = env.scene[cfg.asset_cfg.name]
 
-        # self.pose_command_b = torch.zeros(self.num_envs, 7, device=self.device)
-        # self.pose_command_b[:, 3] = 1.0
-        # self.pose_command_w = torch.zeros_like(self.pose_command_b)
-
     def _resample_command(self, env_ids: torch.Tensor):
-        robot_pos_w = self.robot.data.root_pos_w[env_ids]
 
         r_min, r_max = self.cfg.radius_range
         r_squared = torch.rand(len(env_ids), device=self.device) * (r_max**2 - r_min**2) + r_min**2
@@ -81,13 +84,10 @@ class UniformPose3dPolarCommand(UniformPoseCommand):
         offset_y = r * torch.sin(theta)
 
         rand_yaw = (torch.rand(len(env_ids), device=self.device) * 2 * torch.pi) - torch.pi
-        zeros = torch.zeros_like(rand_yaw)
 
-        self.pose_command_w[env_ids, 0] = robot_pos_w[:, 0] + offset_x
-        self.pose_command_w[env_ids, 1] = robot_pos_w[:, 1] + offset_y
-        self.pose_command_w[env_ids, 2] = robot_pos_w[:, 2]
-
-        # self.pose_command_b[env_ids, 3:] = quat_from_euler_xyz(zeros, zeros, zeros)
+        self.pose_command_b[env_ids, 0] = offset_x
+        self.pose_command_b[env_ids, 1] = offset_y
+        self.pose_command_b[env_ids, 2] = 0.5
 
 @dataclass
 class UniformPose3dPolarCommandCfg(UniformPoseCommandCfg):
@@ -97,3 +97,38 @@ class UniformPose3dPolarCommandCfg(UniformPoseCommandCfg):
 
     radius_range: tuple[float, float] = (1.0, 5.0)
     heading_range: tuple[float, float] = (-3.14159, 3.14159)
+
+
+
+class TimeRemainingCommand(CommandTerm):
+
+    cfg: TimeRemainingCommandCfg
+    """Configuration for the command generator."""
+
+    def __init__(self, cfg: TimeRemainingCommandCfg, env: ManagerBasedRLEnv):
+        super().__init__(cfg, env)
+        self.env = env
+
+    """
+    Properties
+    """
+
+    @property
+    def command(self):
+        print(mdp.remaining_time_s(self.env))
+        return mdp.remaining_time_s(self.env)
+
+
+    def _update_metrics(self):
+        pass
+    def _resample_command(self, env_ids: Sequence[int]):
+        pass
+
+    def _update_command(self):
+        pass
+
+
+
+@dataclass
+class TimeRemainingCommandCfg(CommandTermCfg):
+    class_type: type = TimeRemainingCommand

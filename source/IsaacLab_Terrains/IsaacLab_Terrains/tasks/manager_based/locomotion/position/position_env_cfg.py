@@ -150,10 +150,10 @@ class CommandsCfg:
     pose_command = mdp.commands.UniformPose3dPolarCommandCfg(
         asset_name="robot",
         body_name="base",
-        resampling_time_range=(5.9, 5.9),
+        resampling_time_range=(8.0, 8.0),
         debug_vis=True,
         radius_range=(1.0, 5.0),
-        heading_range=(-3.14, 3.14),
+        heading_range=(-3.0, 3.0),
         ranges=mdp.UniformPoseCommandCfg.Ranges(
             pos_x=(-5.0, 5.0),
             pos_y=(-5.0, 5.0),
@@ -162,9 +162,13 @@ class CommandsCfg:
             pitch=(-0.0, 0.0),
             yaw=(-0.0, 0.0)
         ),
-        # goal_pose_visualizer_cfg = FRAME_MARKER_CFG.replace(
-        #     prim_path="/Visuals/Command/body_pose"
-        # )
+        goal_pose_visualizer_cfg = FRAME_MARKER_CFG.replace(
+            prim_path="/Visuals/Command/body_pose"
+        )
+    )
+
+    time_remaining = mdp.commands.TimeRemainingCommandCfg(
+        resampling_time_range=(0.0, 0.0)
     )
 
 
@@ -187,11 +191,14 @@ class ObservationsCfg:
         # observation terms (order preserved)
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel, noise=Unoise(n_min=-0.1, n_max=0.1))
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel, noise=Unoise(n_min=-0.2, n_max=0.2))
+
         projected_gravity = ObsTerm(
             func=mdp.projected_gravity,
             noise=Unoise(n_min=-0.05, n_max=0.05),
         )
         pose_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
+        time_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "time_remaining"})
+
         joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
         joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-1.5, n_max=1.5))
         actions = ObsTerm(func=mdp.last_action)
@@ -309,6 +316,7 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
+    termination_penalty = RewTerm(func=mdp.is_terminated, weight=-200.0)
     # -- task
     task_reward = RewTerm(
         func=mdp.get_to_pos_in_time,
@@ -320,9 +328,18 @@ class RewardsCfg:
     )
     explore = RewTerm(
         func=mdp.exploration_incentive,
-        weight=1.0,
+        weight=0.5,
         params={"command_name": "pose_command",
                 "asset_cfg": SceneEntityCfg("robot")
+                },
+    )
+
+    stalling = RewTerm(
+        func=mdp.stalling_penalty,
+        weight=-0.5,
+        params={"command_name": "pose_command",
+                "asset_cfg": SceneEntityCfg("robot"),
+                "reward_duration": 1.0,
                 },
     )
 
@@ -393,7 +410,7 @@ class LocomotionPositionRoughEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the locomotion position-tracking environment."""
 
     # Scene settings
-    scene = MySceneCfg(num_envs=2048, env_spacing=2.5)
+    scene = MySceneCfg(num_envs=4096, env_spacing=2.5)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
