@@ -3,10 +3,10 @@
 
 
 <p align="center">
-  <img src="media/Anymal_pos_pyramid.gif" width="90%" alt="Final Policy Demo" />
+  <img src="media/Anymal_pos_pyramid2.gif" width="90%" alt="Final Policy Demo" />
 </p>
 <p align="center">
-  <img src="media/Anymal_pos_squares.gif" width="90%" alt="Final Policy Demo" />
+  <img src="media/Anymal_pos_slope.gif" width="90%" alt="Final Policy Demo" />
 </p>
 
 
