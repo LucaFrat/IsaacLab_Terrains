@@ -98,7 +98,7 @@ class CommandsCfg:
         resampling_time_range=(8.0, 8.0),
         debug_vis=True,
         simple_heading=False,
-        radius_range=(1.0, 5.0),
+        radius_range=(2.5, 5.0),
         heading_range=(-3.0, 3.0),
         ranges=mdp.UniformPose2dCommandCfg.Ranges(
             pos_x=(-5.0, 5.0),
@@ -269,7 +269,7 @@ class RewardsCfg:
 
     # -- penalties
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.5)
-    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.01)
+    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.002)
     dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
     dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
@@ -312,7 +312,7 @@ class LocomotionPositionRoughEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the locomotion position-tracking environment."""
 
     # Scene settings
-    scene = MySceneCfg(num_envs=16, env_spacing=2.5)
+    scene = MySceneCfg(num_envs=4096, env_spacing=2.5)
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()

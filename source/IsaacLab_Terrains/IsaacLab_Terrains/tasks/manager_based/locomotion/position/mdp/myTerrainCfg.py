@@ -62,12 +62,12 @@ POSITION_TERRAIN_CFG = TerrainGeneratorCfg(
     sub_terrains={
         "pit": terrain_gen.MeshPitTerrainCfg(
             proportion=1.0,
-            pit_depth_range=(0.02, 0.4),
-            platform_width=1.5,
+            pit_depth_range=(0.05, 0.8),
+            platform_width=3.0,
         ),
         # "gap": terrain_gen.MeshGapTerrainCfg(
         #     proportion=1.0,
-        #     gap_width_range=(0.02, 0.5),
+        #     gap_width_range=(0.05, 1.0),
         #     platform_width=3.0
         # ),
     },
